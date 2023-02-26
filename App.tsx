@@ -8,6 +8,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import type {PropsWithChildren} from 'react';
 import {
+  Button,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -17,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import ShareMenu from 'react-native-share-menu';
+import nodejs from 'nodejs-mobile-react-native';
 
 import {Colors, Header} from 'react-native/Libraries/NewAppScreen';
 
@@ -61,6 +63,7 @@ function Section({children, title}: SectionProps): JSX.Element {
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
   const [sharedItem, setSharedItem] = useState<SharedItem>();
+  const [moments, setMoments] = useState<unknown>();
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
@@ -90,7 +93,20 @@ function App(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const hasSharedItem = sharedItem && sharedItem.mimeType;
+  useEffect(() => {
+    nodejs.start('main.js');
+    nodejs.channel.addListener(
+      'message',
+      msg => {
+        setMoments(msg);
+      },
+      // @ts-ignore
+      this,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // const hasSharedItem = sharedItem && sharedItem.mimeType;
   //  (typeof sharedItem === 'object' ? sharedItem.length : !!sharedItem);
 
   console.log('[render] ==============> ', {sharedItem});
@@ -114,6 +130,19 @@ function App(): JSX.Element {
           <Section title="Shared items">
             <View>
               <Text>Shared item: {JSON.stringify(sharedItem)}</Text>
+            </View>
+          </Section>
+          <Section title="Moments">
+            <View>
+              <Text>Shared item: {JSON.stringify(moments)}</Text>
+            </View>
+          </Section>
+          <Section title="Share">
+            <View>
+              <Button
+                title="Message Node"
+                onPress={() => nodejs.channel.post('share', 'A message!')}
+              />
             </View>
           </Section>
         </View>
