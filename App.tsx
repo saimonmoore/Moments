@@ -5,7 +5,7 @@
  * @format
  */
 
-import React from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import type {PropsWithChildren} from 'react';
 import {
   SafeAreaView,
@@ -16,18 +16,21 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+import ShareMenu from 'react-native-share-menu';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import {Colors, Header} from 'react-native/Libraries/NewAppScreen';
 
 type SectionProps = PropsWithChildren<{
   title: string;
 }>;
+
+type SharedItem =
+  | {
+      mimeType: string;
+      data: string | string[];
+      extraData?: any;
+    }
+  | undefined;
 
 function Section({children, title}: SectionProps): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -57,11 +60,40 @@ function Section({children, title}: SectionProps): JSX.Element {
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
+  const [sharedItem, setSharedItem] = useState<SharedItem>();
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
+  const handleShare = useCallback((item?: SharedItem) => {
+    console.log('[handleShare] ===============> ', {item});
+    if (!item) {
+      return;
+    }
+
+    setSharedItem(item);
+  }, []);
+
+  useEffect(() => {
+    ShareMenu.getInitialShare(handleShare);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const listener = ShareMenu.addNewShareListener(handleShare);
+
+    return () => {
+      listener.remove();
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const hasSharedItem = sharedItem && sharedItem.mimeType;
+  //  (typeof sharedItem === 'object' ? sharedItem.length : !!sharedItem);
+
+  console.log('[render] ==============> ', {sharedItem});
   return (
     <SafeAreaView style={backgroundStyle}>
       <StatusBar
@@ -78,6 +110,11 @@ function App(): JSX.Element {
           }}>
           <Section title="Step One">
             Welcome to <Text style={styles.highlight}>Moments</Text>
+          </Section>
+          <Section title="Shared items">
+            <View>
+              <Text>Shared item: {JSON.stringify(sharedItem)}</Text>
+            </View>
           </Section>
         </View>
       </ScrollView>
